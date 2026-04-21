@@ -1,0 +1,58 @@
+{
+  "name": "+Roma Showroom",
+  "short_name": "+Roma",
+  "description": "Plataforma de compra y venta de ropa - Showroom +Roma",
+  "theme_color": "#d4af37",
+  "background_color": "#FDFCFB",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "start_url": "/",
+  "id": "/",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  // ELIMINAR ESTA SECCIÓN COMPLETA:
+  // "screenshots": [ ... ],
+  
+  "shortcuts": [
+    {
+      "name": "Catálogo",
+      "short_name": "Catálogo",
+      "description": "Ver productos disponibles",
+      "url": "/",
+      "icons": [{ "src": "/icon.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Vender",
+      "short_name": "Vender",
+      "description": "Publicar un producto",
+      "url": "/?action=sell",
+      "icons": [{ "src": "/icon.png", "sizes": "192x192" }]
+    }
+  ],
+  "categories": ["shopping", "fashion", "lifestyle"],
+  "lang": "es-AR",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "display_override": ["standalone", "window-controls-overlay"],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "handle_links": "auto",
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  }
+}
