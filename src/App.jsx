@@ -3081,7 +3081,7 @@ const [saleConfig, setSaleConfig] = useState(() => {
 
             {/* Sección de Descuentos Global y por Categoría */}
             <div className="mb-12 p-6 bg-[#f8b195]/10 rounded-3xl">
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[#355c7d]"><Tag size={18} /> Configurar Descuentos</h3>
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[#355c7d]"><Tag size={18} /> Configurar Descuentos </h3>
               <div className="space-y-6">
                 <div className="space-y-2">
   <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">Fecha de finalización</label>
@@ -3091,7 +3091,7 @@ const [saleConfig, setSaleConfig] = useState(() => {
     value={saleConfig.fechaFin}
     onChange={(e) => setSaleConfig({...saleConfig, fechaFin: e.target.value})}
   />
-</div>
+                  
 <div className="space-y-2">
   <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">Texto adicional (opcional)</label>
   <textarea
