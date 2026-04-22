@@ -1856,7 +1856,7 @@ const [saleConfig, setSaleConfig] = useState(() => {
       <div className="bg-white border-b sticky top-20 z-40 overflow-x-auto no-scrollbar shadow-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-center gap-6 min-w-max">
           <div className="flex bg-[#f8b195]/10 p-1 rounded-full border border-[#c06c84]/20">
-            {["Todo", "Hombre", "Mujer", "Niño", "Niña"].map(g => (
+            {["Todo", "Mujer", "Niño", "Niña"].map(g => (
               <button
                 key={g}
                 onClick={() => setSelectedGender(g)}
