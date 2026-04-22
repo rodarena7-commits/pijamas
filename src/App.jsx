@@ -1579,7 +1579,7 @@ export default function App() {
 <div className="flex items-center gap-2 cursor-pointer group" onClick={handleLogoClick}>
   <div className="flex items-center gap-1">
     <span className="text-2xl md:text-3xl font-serif tracking-[0.2em] font-light group-hover:text-[#f67280] transition-colors uppercase whitespace-nowrap">Pijamas</span>
-    <img src="/logoih.png" alt="Logo IH" className="h-[1.25em] w-auto object-contain" />
+    <img src="/logoih.png" alt="Logo IH" className="h-[120px] w-auto object-contain" />
   </div>
 </div>
 
