@@ -42,8 +42,8 @@ const MAIN_ADMINS = [
 
 // CATEGORÍAS para el filtro (solo 3: Pijamas, Pantuflas, Accesorios)
 const CATEGORY_FILTERS = [
-  { id: 'pijamas', name: 'Pijamas', image: 'https://images.unsplash.com/photo-1527502531437-6e8f7b16f7a5?auto=format&fit=crop&q=80&w=200' },
-  { id: 'pantuflas', name: 'Pantuflas', image: 'https://images.unsplash.com/photo-1605274490879-2e12d2d2f1e0?auto=format&fit=crop&q=80&w=200' },
+  { id: 'pijamas', name: 'Pijamas', image: '/pijamas.jpg' },
+  { id: 'pantuflas', name: 'Pantuflas', image: '/pantuflas.jpeg' },
   { id: 'accesorios', name: 'Accesorios', image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&q=80&w=200' }
 ];
 
