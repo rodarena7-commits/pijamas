@@ -42,7 +42,7 @@ const MAIN_ADMINS = [
 
 // CATEGORÍAS para el filtro (solo 3: Pijamas, Pantuflas, Accesorios)
 const CATEGORY_FILTERS = [
-  { id: 'pijamas', name: 'Pijamas', image: '/pijamas.jpg' },
+  { id: 'pijamas', name: 'Pijamas', image: '/pijama.jpg' },
   { id: 'pantuflas', name: 'Pantuflas', image: '/pantuflas.jpeg' },
   { id: 'accesorios', name: 'Accesorios', image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&q=80&w=200' }
 ];
