@@ -481,18 +481,17 @@ export default function App() {
   const [pinInput, setPinInput] = useState("");
   
   // Cargar estado del banner desde localStorage (por defecto desactivado)
-  const [saleConfig, setSaleConfig] = useState(() => {
-    const saved = localStorage.getItem('pijamas_saleConfig');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    return {
-      title: "¡GRAN LIQUIDACIÓN DE TEMPORADA!",
-      promo: "50",           // Cambiado a número para facilitar descuento
-      vigencia: "Válido hasta el 28 de febrero",
-      active: false          // Desactivado por defecto
-    };
-  });
+const [saleConfig, setSaleConfig] = useState(() => {
+  const saved = localStorage.getItem('pijamas_saleConfig');
+  if (saved) return JSON.parse(saved);
+  return {
+    title: "¡GRAN LIQUIDACIÓN DE TEMPORADA!",
+    promo: "50",
+    textoAdicional: "¡No te lo pierdas!",
+    fechaFin: "2025-12-31",   // formato YYYY-MM-DD
+    active: false
+  };
+});
 
   // Descuentos por categoría (inicialmente vacío)
   const [categoryDiscounts, setCategoryDiscounts] = useState(() => {
