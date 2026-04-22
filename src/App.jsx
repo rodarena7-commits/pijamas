@@ -1629,7 +1629,10 @@ const [saleConfig, setSaleConfig] = useState(() => {
             <span className="bg-white text-[#f67280] px-3 py-0.5 rounded-full font-bold text-xs uppercase tracking-widest animate-pulse">
               {saleConfig.promo}% OFF
             </span>
-            <span className="text-[10px] uppercase font-bold tracking-widest opacity-80">{saleConfig.vigencia}</span>
+    <span className="text-[10px] uppercase font-bold tracking-widest opacity-80">
+  {saleConfig.fechaFin && `Válido hasta ${new Date(saleConfig.fechaFin).toLocaleDateString()}`}
+  {saleConfig.textoAdicional && ` · ${saleConfig.textoAdicional}`}
+</span>
           </div>
         </div>
       )}
