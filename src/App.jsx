@@ -3091,7 +3091,7 @@ const [saleConfig, setSaleConfig] = useState(() => {
     value={saleConfig.fechaFin}
     onChange={(e) => setSaleConfig({...saleConfig, fechaFin: e.target.value})}
   />
-
+</div>
 <div className="space-y-2">
   <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">Texto adicional (opcional)</label>
   <textarea
