@@ -1576,8 +1576,7 @@ export default function App() {
       {/* --- Navegación --- */}
       <header className="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-[#c06c84]/20">
         <div className="container mx-auto px-4 lg:px-8 h-20 flex items-center justify-between">
-   <div className="flex items-center gap-2 cursor-pointer group" onClick={handleLogoClick}>
-  <img src="/pijamas.png" alt="Pijamas" className="h-12 w-auto object-contain" />
+<div className="flex items-center gap-2 cursor-pointer group" onClick={handleLogoClick}>
   <div className="flex items-center gap-1">
     <span className="text-2xl md:text-3xl font-serif tracking-[0.2em] font-light group-hover:text-[#f67280] transition-colors uppercase whitespace-nowrap">Pijamas</span>
     <img src="/logoih.png" alt="Logo IH" className="h-[1.25em] w-auto object-contain" />
