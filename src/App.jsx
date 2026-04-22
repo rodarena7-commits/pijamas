@@ -3078,42 +3078,73 @@ const [saleConfig, setSaleConfig] = useState(() => {
                 <PlusCircle size={20} /> Nueva Publicación
               </button>
             </div>
-
+            
             {/* Sección de Descuentos Global y por Categoría */}
             <div className="mb-12 p-6 bg-[#f8b195]/10 rounded-3xl">
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[#355c7d]"><Tag size={18} /> Configurar Descuentos </h3>
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[#355c7d]">
+                <Tag size={18} /> Configurar Descuentos
+              </h3>
               <div className="space-y-6">
+                
+                {/* Descuento Global */}
                 <div className="space-y-2">
-  <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">Fecha de finalización</label>
-  <input
-    type="date"
-    className="w-full bg-white border border-[#c06c84]/20 p-4 rounded-2xl outline-none focus:border-[#f67280] text-[#355c7d]"
-    value={saleConfig.fechaFin}
-    onChange={(e) => setSaleConfig({...saleConfig, fechaFin: e.target.value})}
-  />
-                  
-<div className="space-y-2">
-  <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">Texto adicional (opcional)</label>
-  <textarea
-    rows="2"
-    className="w-full bg-white border border-[#c06c84]/20 p-4 rounded-2xl outline-none focus:border-[#f67280] text-[#355c7d]"
-    value={saleConfig.textoAdicional}
-    onChange={(e) => setSaleConfig({...saleConfig, textoAdicional: e.target.value})}
-    placeholder="Ej: Oferta válida hasta agotar stock"
-  />
-</div>
+                  <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">
+                    Descuento Global (%)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      className="flex-1 bg-white border border-[#c06c84]/20 p-4 rounded-2xl outline-none focus:border-[#f67280] text-[#355c7d]"
+                      value={saleConfig.promo}
+                      onChange={(e) => setSaleConfig({...saleConfig, promo: e.target.value})}
+                      placeholder="Ej: 50"
+                    />
                     <button
                       onClick={() => setSaleConfig({...saleConfig, active: !saleConfig.active})}
-                      className={`px-4 rounded-2xl font-bold text-sm ${saleConfig.active ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-700'}`}
+                      className={`px-4 rounded-2xl font-bold text-sm ${
+                        saleConfig.active ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-700'
+                      }`}
                     >
                       {saleConfig.active ? 'Activo' : 'Inactivo'}
                     </button>
                   </div>
-                  <p className="text-[8px] text-[#6c5b7b]">El banner debe estar activo para que el descuento se aplique.</p>
+                  <p className="text-[8px] text-[#6c5b7b]">
+                    El banner debe estar activo para que el descuento se aplique.
+                  </p>
                 </div>
 
+                {/* Fecha de finalización */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">
+                    Fecha de finalización
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full bg-white border border-[#c06c84]/20 p-4 rounded-2xl outline-none focus:border-[#f67280] text-[#355c7d]"
+                    value={saleConfig.fechaFin || ''}
+                    onChange={(e) => setSaleConfig({...saleConfig, fechaFin: e.target.value})}
+                  />
+                </div>
+
+                {/* Texto adicional */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">
+                    Texto adicional (opcional)
+                  </label>
+                  <textarea
+                    rows="2"
+                    className="w-full bg-white border border-[#c06c84]/20 p-4 rounded-2xl outline-none focus:border-[#f67280] text-[#355c7d]"
+                    value={saleConfig.textoAdicional || ''}
+                    onChange={(e) => setSaleConfig({...saleConfig, textoAdicional: e.target.value})}
+                    placeholder="Ej: Oferta válida hasta agotar stock"
+                  />
+                </div>
+
+                {/* Descuentos por categoría */}
                 <div className="space-y-3">
-                  <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">Descuentos por Categoría (porcentaje)</label>
+                  <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">
+                    Descuentos por Categoría (porcentaje)
+                  </label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {CATEGORIES.map(cat => (
                       <div key={cat.id} className="flex items-center gap-2 bg-white p-2 rounded-xl border border-[#c06c84]/20">
@@ -3146,10 +3177,13 @@ const [saleConfig, setSaleConfig] = useState(() => {
                       </div>
                     ))}
                   </div>
-                  <p className="text-[8px] text-[#6c5b7b]">Los descuentos por categoría tienen prioridad sobre el descuento global.</p>
+                  <p className="text-[8px] text-[#6c5b7b]">
+                    Los descuentos por categoría tienen prioridad sobre el descuento global.
+                  </p>
                 </div>
-              </div>
-            </div>
+
+              </div>  {/* cierra el div con className="space-y-6" */}
+            </div>  {/* cierra el div mb-12 */}
 
             <div className="flex gap-4 mb-6 border-b border-[#c06c84]/20">
               <button
