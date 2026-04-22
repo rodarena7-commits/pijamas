@@ -3081,15 +3081,24 @@ const [saleConfig, setSaleConfig] = useState(() => {
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[#355c7d]"><Tag size={18} /> Configurar Descuentos</h3>
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">Descuento Global (%)</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      className="flex-1 bg-white border border-[#c06c84]/20 p-4 rounded-2xl outline-none focus:border-[#f67280] text-[#355c7d]"
-                      value={saleConfig.promo}
-                      onChange={(e) => setSaleConfig({...saleConfig, promo: e.target.value})}
-                      placeholder="Ej: 50"
-                    />
+  <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">Fecha de finalización</label>
+  <input
+    type="date"
+    className="w-full bg-white border border-[#c06c84]/20 p-4 rounded-2xl outline-none focus:border-[#f67280] text-[#355c7d]"
+    value={saleConfig.fechaFin}
+    onChange={(e) => setSaleConfig({...saleConfig, fechaFin: e.target.value})}
+  />
+
+<div className="space-y-2">
+  <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">Texto adicional (opcional)</label>
+  <textarea
+    rows="2"
+    className="w-full bg-white border border-[#c06c84]/20 p-4 rounded-2xl outline-none focus:border-[#f67280] text-[#355c7d]"
+    value={saleConfig.textoAdicional}
+    onChange={(e) => setSaleConfig({...saleConfig, textoAdicional: e.target.value})}
+    placeholder="Ej: Oferta válida hasta agotar stock"
+  />
+</div>
                     <button
                       onClick={() => setSaleConfig({...saleConfig, active: !saleConfig.active})}
                       className={`px-4 rounded-2xl font-bold text-sm ${saleConfig.active ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-700'}`}
