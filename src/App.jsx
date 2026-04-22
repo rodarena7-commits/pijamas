@@ -1576,14 +1576,17 @@ export default function App() {
       {/* --- Navegación --- */}
       <header className="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-[#c06c84]/20">
         <div className="container mx-auto px-4 lg:px-8 h-20 flex items-center justify-between">
-          <div className="flex flex-col cursor-pointer group" onClick={handleLogoClick}>
-            <img src="/pijamas.png" alt="Pijamas" className="h-12 w-auto object-contain" onError={(e) => {
-              e.target.onerror = null;
-              e.target.style.display = 'none';
-              e.target.nextSibling.style.display = 'block';
-            }} />
-            <span className="hidden text-2xl md:text-3xl font-serif tracking-[0.2em] font-light group-hover:text-[#f67280] transition-colors uppercase tracking-widest">Pijamas</span>
-          </div>
+         <div className="flex items-center gap-2 cursor-pointer group" onClick={handleLogoClick}>
+  <img src="/pijamas.png" alt="Pijamas" className="h-12 w-auto object-contain" onError={(e) => {
+    e.target.onerror = null;
+    e.target.style.display = 'none';
+    e.target.nextSibling.style.display = 'block';
+  }} />
+  <div className="flex items-center gap-1">
+    <span className="text-2xl md:text-3xl font-serif tracking-[0.2em] font-light group-hover:text-[#f67280] transition-colors uppercase tracking-widest">Pijamas</span>
+    <img src="/logoih.png" alt="Logo IH" className="h-6 w-auto ml-1" />
+  </div>
+</div>
 
           <div className="hidden lg:flex flex-1 max-w-lg mx-12 relative group">
             <input
