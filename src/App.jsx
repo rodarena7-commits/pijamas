@@ -44,7 +44,7 @@ const MAIN_ADMINS = [
 const CATEGORY_FILTERS = [
   { id: 'pijamas', name: 'Pijamas', image: '/pijama.jpg' },
   { id: 'pantuflas', name: 'Pantuflas', image: '/pantuflas.jpeg' },
-  { id: 'accesorios', name: 'Accesorios', image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&q=80&w=200' }
+  { id: 'accesorios', name: 'Accesorios', image: '/accesorios.png' }
 ];
 
 // CATEGORÍAS para la publicación de productos (se mantiene completa, pero el filtro principal solo mostrará las 3)
