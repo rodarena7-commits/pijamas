@@ -34,6 +34,7 @@ const APP_ID = "pijamas";
 const INITIAL_AUTHORIZED_SELLERS = [
   "rodrigo.n.arena@hotmail.com",
   "ingridhuck_2006@hotmail.com"
+  "ingridcitasony@gmail.com"
 ];
 
 // Lista de administradores principales
