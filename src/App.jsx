@@ -1852,22 +1852,6 @@ const [saleConfig, setSaleConfig] = useState(() => {
         </div>
       </header>
 
-      {/* --- Filtros - Solo Género --- */}
-      <div className="bg-white border-b sticky top-20 z-40 overflow-x-auto no-scrollbar shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-center gap-6 min-w-max">
-          <div className="flex bg-[#f8b195]/10 p-1 rounded-full border border-[#c06c84]/20">
-            {["Todo", "Mujer", "Niño", "Niña"].map(g => (
-              <button
-                key={g}
-                onClick={() => setSelectedGender(g)}
-                className={"px-5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all " +
-                  (selectedGender === g ? 'bg-[#355c7d] text-white shadow-md' : 'text-[#6c5b7b] hover:text-[#355c7d]')}
-              >{g}</button>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* --- Filtros de Categorías (Pijamas, Pantuflas, Accesorios) con imágenes --- */}
       <div className="container mx-auto px-4 py-8">
         <div className="flex gap-6 justify-center overflow-x-auto no-scrollbar pb-6">
