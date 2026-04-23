@@ -33,8 +33,8 @@ const APP_ID = "pijamas";
 // Lista inicial de usuarios autorizados para publicar
 const INITIAL_AUTHORIZED_SELLERS = [
   "rodrigo.n.arena@hotmail.com",
-  "ingridhuck_2006@hotmail.com"
-  "ingridcitasony@gmail.com"
+  "ingridhuck_2006@hotmail.com",
+  "ingridcitasony@gmail.com",
 "rod.arena7@gmail.com"
 ];
 
