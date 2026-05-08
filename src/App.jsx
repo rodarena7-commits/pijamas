@@ -40,7 +40,8 @@ const INITIAL_AUTHORIZED_SELLERS = [
 
 // Lista de administradores principales
 const MAIN_ADMINS = [
-  "rodrigo.n.arena@hotmail.com"
+  "rodrigo.n.arena@hotmail.com",
+  "ingridcitasony@gmail.com"
 ];
 
 // CATEGORÍAS para el filtro (Pijamas, Pantuflas, Trajes de Baño, Accesorios)
