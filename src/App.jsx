@@ -926,9 +926,9 @@ export default function App() {
       soldAt: null,
       status: {
         iniciada: true,
-        verificada: false,
-        aprobada: false,
-        publicada: false
+        verificada: true,
+        aprobada: true,
+        publicada: true
       },
       createdAt: Timestamp.now()
     };
@@ -937,28 +937,13 @@ export default function App() {
 
     await addDoc(collection(db, "notifications"), {
       userId: user.uid,
-      type: "product_pending",
-      title: "Producto enviado para revisión",
-      message: `Tu producto "${newProduct.title}" está siendo revisado por nuestros administradores.`,
+      type: "product_published",
+      title: "¡Producto publicado!",
+      message: `Tu producto "${newProduct.title}" ha sido publicado exitosamente.`,
       productId: productRef.id,
       productImage: newProduct.images[0],
       read: false,
       createdAt: Timestamp.now()
-    });
-
-    const adminUsers = await getDocs(query(collection(db, "users"), where("isAdmin", "==", true)));
-    
-    adminUsers.docs.forEach(async (adminDoc) => {
-      await addDoc(collection(db, "notifications"), {
-        userId: adminDoc.id,
-        type: "new_product_pending",
-        title: "Nuevo producto para revisar",
-        message: `${user.name} ha publicado "${newProduct.title}" para revisión.`,
-        productId: productRef.id,
-        productImage: newProduct.images[0],
-        read: false,
-        createdAt: Timestamp.now()
-      });
     });
 
     setIsModalOpen(false);
@@ -983,29 +968,7 @@ export default function App() {
       outseam: ""
     });
 
-    alert("✅ ¡Producto enviado para revisión! Recibirás una notificación cuando sea aprobado.");
-  };
-
-  const handlePublishProduct = async (productId) => {
-    const productRef = doc(db, "products", productId);
-    await updateDoc(productRef, {
-      'status.publicada': true,
-      'status.aprobada': true
-    });
-
-    const product = pendingProducts.find(p => p.id === productId);
-    if (product) {
-      await addDoc(collection(db, "notifications"), {
-        userId: product.userId,
-        type: "product_approved",
-        title: "¡Producto aprobado!",
-        message: `Tu producto "${product.title}" ha sido aprobado y ya está visible en el catálogo.`,
-        productId: productId,
-        productImage: product.images ? product.images[0] : product.image,
-        read: false,
-        createdAt: Timestamp.now()
-      });
-    }
+    alert("✅ ¡Producto publicado exitosamente! Ya es visible en el catálogo.");
   };
 
   const handleEditProduct = (product) => {
@@ -1027,11 +990,11 @@ export default function App() {
       montoNeto: montoNeto,
       comisionMonto: comisionMonto,
       cuotas: (editingProduct.cuotas && parseInt(editingProduct.cuotas) > 0) ? (editingProduct.cuotas + " cuotas sin interés") : "",
-      status: isAdmin ? editingProduct.status : {
+      status: {
         iniciada: true,
-        verificada: false,
-        aprobada: false,
-        publicada: false
+        verificada: true,
+        aprobada: true,
+        publicada: true
       }
     };
 
@@ -1207,17 +1170,6 @@ export default function App() {
       setSaleClicks(0);
       setShowPinModal(false);
     }
-  };
-
-  const handleStatusChange = async (productId, statusType) => {
-    const productRef = doc(db, "products", productId);
-    const update = {};
-    if (statusType === 'verificada') {
-      update['status.verificada'] = true;
-    } else if (statusType === 'aprobada') {
-      update['status.aprobada'] = true;
-    }
-    await updateDoc(productRef, update);
   };
 
   const handleFollow = async (userIdToFollow) => {
@@ -3174,33 +3126,6 @@ export default function App() {
                             </div>
                           </div>
                           <div className="flex gap-2">
-                            {selectedTab === 'pendientes' && (
-                              <>
-                                <button
-                                  onClick={() => handleStatusChange(product.id, 'verificada')}
-                                  className={"p-3 rounded-xl transition-all transform hover:scale-105 " +
-                                    (product.status.verificada ? 'bg-[#f8b195]/30 text-[#355c7d] shadow-md' : 'bg-slate-100 text-slate-400 hover:bg-[#f8b195]/20 hover:text-[#355c7d]')}
-                                  title="Verificar"
-                                >
-                                  <CheckCircle size={22} />
-                                </button>
-                                <button
-                                  onClick={() => handleStatusChange(product.id, 'aprobada')}
-                                  className={"p-3 rounded-xl transition-all transform hover:scale-105 " +
-                                    (product.status.aprobada ? 'bg-[#f8b195]/30 text-[#355c7d] shadow-md' : 'bg-slate-100 text-slate-400 hover:bg-[#f8b195]/20 hover:text-[#355c7d]')}
-                                  title="Aprobar"
-                                >
-                                  <Check size={22} />
-                                </button>
-                                <button
-                                  onClick={() => handlePublishProduct(product.id)}
-                                  className="p-3 rounded-xl bg-[#f8b195]/30 text-[#355c7d] hover:bg-[#f8b195]/50 transition-all transform hover:scale-105"
-                                  title="Publicar"
-                                >
-                                  <ArrowRight size={22} />
-                                </button>
-                              </>
-                            )}
                             <button
                               onClick={() => handleEditProduct(product)}
                               className="p-3 rounded-xl bg-slate-100 text-slate-400 hover:bg-[#f8b195]/20 hover:text-[#355c7d] transition-all transform hover:scale-105"
@@ -3218,39 +3143,6 @@ export default function App() {
                           </div>
                         </div>
 
-                        {!product.sold && (
-                          <div className="mt-4 bg-[#f8b195]/10 p-4 rounded-2xl">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-1 flex-1">
-                                <div className={"w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold " +
-                                  (product.status.iniciada ? 'bg-[#f67280] text-white shadow-lg' : 'bg-white text-slate-400 border-2 border-[#c06c84]/30')}>
-                                  {product.status.iniciada ? <Check size={16} /> : '1'}
-                                </div>
-                                <div className={"flex-1 h-1 " + (product.status.verificada ? 'bg-[#f67280]' : 'bg-[#c06c84]/30')}></div>
-                                <div className={"w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold " +
-                                  (product.status.verificada ? 'bg-[#f67280] text-white shadow-lg' : 'bg-white text-slate-400 border-2 border-[#c06c84]/30')}>
-                                  {product.status.verificada ? <Check size={16} /> : '2'}
-                                </div>
-                                <div className={"flex-1 h-1 " + (product.status.aprobada ? 'bg-[#f67280]' : 'bg-[#c06c84]/30')}></div>
-                                <div className={"w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold " +
-                                  (product.status.aprobada ? 'bg-[#f67280] text-white shadow-lg' : 'bg-white text-slate-400 border-2 border-[#c06c84]/30')}>
-                                  {product.status.aprobada ? <Check size={16} /> : '3'}
-                                </div>
-                                <div className={"flex-1 h-1 " + (product.status.publicada ? 'bg-[#f67280]' : 'bg-[#c06c84]/30')}></div>
-                                <div className={"w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold " +
-                                  (product.status.publicada ? 'bg-[#f67280] text-white shadow-lg' : 'bg-white text-slate-400 border-2 border-[#c06c84]/30')}>
-                                  {product.status.publicada ? <Check size={16} /> : '4'}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex justify-between mt-2 px-1">
-                              <span className="text-[10px] font-bold text-[#6c5b7b]">Iniciada</span>
-                              <span className="text-[10px] font-bold text-[#6c5b7b]">Verificada</span>
-                              <span className="text-[10px] font-bold text-[#6c5b7b]">Aprobada</span>
-                              <span className="text-[10px] font-bold text-[#6c5b7b]">Publicada</span>
-                            </div>
-                          </div>
-                        )}
 
                         <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
                           <div className="bg-[#f8b195]/10 p-2 rounded-xl">
