@@ -611,7 +611,6 @@ export default function App() {
           collection(db, "products"),
           where("status.publicada", "==", true),
           where("appId", "==", APP_ID),
-          orderBy("createdAt", "desc"),
           limit(16)
         );
 
@@ -1319,7 +1318,6 @@ export default function App() {
         collection(db, "products"),
         where("status.publicada", "==", true),
         where("appId", "==", APP_ID),
-        orderBy("createdAt", "desc"),
         startAfter(lastProductDoc),
         limit(16)
       );
