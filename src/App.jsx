@@ -486,7 +486,7 @@ export default function App() {
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [pinInput, setPinInput] = useState("");
   
-  // Banner desde Firebase (tiempo real para todos los usuarios)
+  // Banner y descuentos desde Firebase (tiempo real para todos los usuarios)
   const [saleConfig, setSaleConfig] = useState({
     title: "¡GRAN LIQUIDACIÓN DE TEMPORADA!",
     promo: "50",
@@ -496,19 +496,20 @@ export default function App() {
     bgColor: "#f67280",
     textColor: "#ffffff",
     imageUrl: "",
-    imagePosition: "side"
+    imagePosition: "side",
+    categoryDiscounts: {}
   });
 
-  // Descuentos por categoría (guardados en localStorage)
-  const [categoryDiscounts, setCategoryDiscounts] = useState(() => {
-    const saved = localStorage.getItem('pijamas_categoryDiscounts');
-    return saved ? JSON.parse(saved) : {};
-  });
+  // Acceso directo a categoryDiscounts desde saleConfig
+  const categoryDiscounts = saleConfig.categoryDiscounts || {};
 
-  // Guardar descuentos por categoría en localStorage cuando cambien
-  useEffect(() => {
-    localStorage.setItem('pijamas_categoryDiscounts', JSON.stringify(categoryDiscounts));
-  }, [categoryDiscounts]);
+  const setCategoryDiscounts = (updater) => {
+    const newCategoryDiscounts = typeof updater === 'function' ? updater(categoryDiscounts) : updater;
+    setSaleConfig(prev => ({
+      ...prev,
+      categoryDiscounts: newCategoryDiscounts
+    }));
+  };
 
   // Estados para invitados
   const [guestInfo, setGuestInfo] = useState(null);
