@@ -430,6 +430,11 @@ export default function App() {
   const [notifications, setNotifications] = useState([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [authorizedSellers, setAuthorizedSellers] = useState(INITIAL_AUTHORIZED_SELLERS);
+
+  // Paginación de productos
+  const [lastProductDoc, setLastProductDoc] = useState(null);
+  const [hasMoreProducts, setHasMoreProducts] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   
   // Estados de modales
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -481,32 +486,34 @@ export default function App() {
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [pinInput, setPinInput] = useState("");
   
-  // Cargar estado del banner desde localStorage (por defecto desactivado)
-  const [saleConfig, setSaleConfig] = useState(() => {
-    const saved = localStorage.getItem('pijamas_saleConfig');
-    if (saved) return JSON.parse(saved);
-    return {
-      title: "¡GRAN LIQUIDACIÓN DE TEMPORADA!",
-      promo: "50",
-      textoAdicional: "¡No te lo pierdas!",
-      fechaFin: "2025-12-31",
-      active: false
-    };
+  // Banner desde Firebase (tiempo real para todos los usuarios)
+  const [saleConfig, setSaleConfig] = useState({
+    title: "¡GRAN LIQUIDACIÓN DE TEMPORADA!",
+    promo: "50",
+    textoAdicional: "¡No te lo pierdas!",
+    fechaFin: "2025-12-31",
+    active: false,
+    bgColor: "#f67280",
+    textColor: "#ffffff",
+    imageUrl: "",
+    imagePosition: "side"
   });
 
-  // Descuentos por categoría (inicialmente vacío)
+  // Descuentos por categoría (guardados en localStorage)
   const [categoryDiscounts, setCategoryDiscounts] = useState(() => {
     const saved = localStorage.getItem('pijamas_categoryDiscounts');
     return saved ? JSON.parse(saved) : {};
   });
 
-  // Guardar estado del banner y descuentos en localStorage cuando cambien
-  useEffect(() => {
-    localStorage.setItem('pijamas_saleConfig', JSON.stringify(saleConfig));
-  }, [saleConfig]);
+  // Guardar descuentos por categoría en localStorage cuando cambien
   useEffect(() => {
     localStorage.setItem('pijamas_categoryDiscounts', JSON.stringify(categoryDiscounts));
   }, [categoryDiscounts]);
+
+  // Estados para invitados
+  const [guestInfo, setGuestInfo] = useState(null);
+  const [showGuestModal, setShowGuestModal] = useState(false);
+  const [pendingCartProduct, setPendingCartProduct] = useState(null);
 
   // Función para obtener el porcentaje de descuento aplicable a un producto
   const getDiscountPercentForProduct = (product) => {
@@ -588,14 +595,37 @@ export default function App() {
 
   // Cargar datos desde Firestore (solo para APP_ID = "pijamas")
   useEffect(() => {
-    // Productos publicados (incluyendo vendidos) - SOLO de esta app
-    const publishedUnsubscribe = onSnapshot(
-      query(collection(db, "products"), where("status.publicada", "==", true), where("appId", "==", APP_ID)),
-      (snapshot) => {
+    // Banner de descuentos (tiempo real desde Firestore)
+    const bannerUnsubscribe = onSnapshot(doc(db, "bannerConfig", "current"), (snap) => {
+      if (snap.exists()) {
+        setSaleConfig(snap.data());
+      }
+    }, (error) => {
+      console.log("Banner no existe en Firestore, usando valores por defecto");
+    });
+
+    // Productos publicados (incluyendo vendidos) - SOLO de esta app - CON PAGINACIÓN
+    const loadInitialProducts = async () => {
+      try {
+        const q = query(
+          collection(db, "products"),
+          where("status.publicada", "==", true),
+          where("appId", "==", APP_ID),
+          orderBy("createdAt", "desc"),
+          limit(16)
+        );
+
+        const snapshot = await getDocs(q);
         const productsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setProducts(productsList);
+        setLastProductDoc(snapshot.docs[snapshot.docs.length - 1]);
+        setHasMoreProducts(snapshot.docs.length === 16);
+      } catch (error) {
+        console.error("Error cargando productos:", error);
       }
-    );
+    };
+
+    loadInitialProducts();
 
     // Productos pendientes - SOLO de esta app
     const pendingUnsubscribe = onSnapshot(
@@ -681,7 +711,7 @@ export default function App() {
     });
 
     return () => {
-      publishedUnsubscribe();
+      bannerUnsubscribe();
       pendingUnsubscribe();
       usersUnsubscribe();
       followersUnsubscribe();
@@ -698,10 +728,14 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const userRef = doc(db, "users", firebaseUser.uid);
-        const userDoc = await getDocs(query(collection(db, "users"), where("uid", "==", firebaseUser.uid)));
-        
         const isMainAdmin = MAIN_ADMINS.includes(firebaseUser.email);
-        const authSnapshot = await getDocs(collection(db, "authorizedSellers"));
+
+        // Ejecutar las dos consultas en paralelo
+        const [userDoc, authSnapshot] = await Promise.all([
+          getDocs(query(collection(db, "users"), where("uid", "==", firebaseUser.uid))),
+          getDocs(collection(db, "authorizedSellers"))
+        ]);
+
         const emails = authSnapshot.docs.map(doc => doc.data().email);
         const canPublishValue = isMainAdmin || emails.includes(firebaseUser.email);
         
@@ -1030,16 +1064,21 @@ export default function App() {
     await updateDoc(productRef, updateData);
   };
 
-  // Modificada para aceptar precio final (con descuento) y sin comisión
-  const handleMarkAsSold = async (productId, buyerId, paymentMethod = 'mercadopago', finalPrice = null) => {
-    if (window.confirm("¿Marcar esta prenda como vendida?")) {
+  // Modificada para aceptar precio final (con descuento), datos de invitado, y skipConfirm
+  const handleMarkAsSold = async (productId, buyerId, paymentMethod = 'mercadopago', finalPrice = null, guestData = null, skipConfirm = false) => {
+    // Si no es invitado, mostrar confirmación (a menos que skipConfirm sea true, para el checkout)
+    if (!skipConfirm && !guestData && !buyerId.startsWith('guest_')) {
+      if (!window.confirm("¿Marcar esta prenda como vendida?")) return;
+    }
+
+    try {
       const productRef = doc(db, "products", productId);
       const product = [...products, ...pendingProducts].find(p => p.id === productId);
       const priceToUse = finalPrice !== null ? finalPrice : product.price;
       const comisionMonto = priceToUse * COMISION;
       const montoNeto = priceToUse - comisionMonto;
-      
-      await updateDoc(productRef, {
+
+      const updateData = {
         sold: true,
         buyerId: buyerId,
         soldAt: Timestamp.now(),
@@ -1047,45 +1086,59 @@ export default function App() {
         price: priceToUse,
         montoNeto: montoNeto,
         comisionMonto: comisionMonto
-      });
+      };
+
+      // Si es invitado, guardar sus datos
+      if (guestData) {
+        updateData.buyerName = guestData.name;
+        updateData.buyerWhatsapp = guestData.whatsapp;
+      }
+
+      await updateDoc(productRef, updateData);
 
       const sellerRef = doc(db, "users", product.userId);
       await updateDoc(sellerRef, {
         totalEarned: increment(montoNeto)
       });
 
-      await addDoc(collection(db, "notifications"), {
-        userId: product.userId,
-        type: "sale",
-        title: "¡Producto vendido!",
-        message: `Tu producto "${product.title}" ha sido vendido. Prepara el envío.`,
-        productId: productId,
-        productImage: product.images ? product.images[0] : product.image,
-        read: false,
-        createdAt: Timestamp.now()
-      });
+      // Solo crear notificaciones si no es invitado
+      if (!guestData && !buyerId.startsWith('guest_')) {
+        await addDoc(collection(db, "notifications"), {
+          userId: product.userId,
+          type: "sale",
+          title: "¡Producto vendido!",
+          message: `Tu producto "${product.title}" ha sido vendido. Prepara el envío.`,
+          productId: productId,
+          productImage: product.images ? product.images[0] : product.image,
+          read: false,
+          createdAt: Timestamp.now()
+        });
+
+        await addDoc(collection(db, "notifications"), {
+          userId: buyerId,
+          type: "purchase",
+          title: "¡Compra exitosa!",
+          message: `Has comprado "${product.title}" exitosamente. El vendedor será notificado.`,
+          productId: productId,
+          productImage: product.images ? product.images[0] : product.image,
+          read: false,
+          createdAt: Timestamp.now()
+        });
+      }
 
       if (product.whatsappNumber) {
+        const buyerInfo = guestData ? `\nComprador: ${guestData.name}\nContacto: ${guestData.whatsapp}` : "";
         const mensaje = encodeURIComponent(
           `¡Hola ${product.user.name}! Tu producto "${product.title}" ha sido vendido en Pijamas.\n\n` +
           `Precio de venta: $${priceToUse.toLocaleString()}\n` +
-          `Neto a cobrar: $${montoNeto.toLocaleString()}\n\n` +
+          `Neto a cobrar: $${montoNeto.toLocaleString()}${buyerInfo}\n\n` +
           `Por favor, prepara el producto para su envío.\n\n` +
           `Gracias por vender con Pijamas.`
         );
         window.open(`https://wa.me/${product.whatsappNumber}?text=${mensaje}`, "_blank");
       }
-
-      await addDoc(collection(db, "notifications"), {
-        userId: buyerId,
-        type: "purchase",
-        title: "¡Compra exitosa!",
-        message: `Has comprado "${product.title}" exitosamente. El vendedor será notificado.`,
-        productId: productId,
-        productImage: product.images ? product.images[0] : product.image,
-        read: false,
-        createdAt: Timestamp.now()
-      });
+    } catch (error) {
+      console.error("Error al marcar como vendido:", error);
     }
   };
 
@@ -1095,18 +1148,21 @@ export default function App() {
 
     try {
       const compressedReceipt = await compressImage(file, 1000, 0.6);
-      
+
       // Calcular precios finales con descuento para cada item del carrito
       const cartWithDiscount = cart.map(item => {
         const { discounted } = getDiscountedPrice(item);
         return { ...item, finalPrice: discounted };
       });
       const totalConDescuento = cartWithDiscount.reduce((sum, item) => sum + item.finalPrice, 0);
-      
+
+      const buyerId = user?.uid || ('guest_' + Date.now());
+
       const receiptData = {
-        userId: user.uid,
-        userName: user.name,
-        userAvatar: user.avatar,
+        userId: buyerId,
+        userName: user?.name || guestInfo?.name || "Invitado",
+        userAvatar: user?.avatar || "",
+        userWhatsapp: guestInfo?.whatsapp || user?.whatsappNumber || "",
         cart: cartWithDiscount.map(item => ({
           id: item.id,
           title: item.title,
@@ -1122,18 +1178,19 @@ export default function App() {
       };
 
       await addDoc(collection(db, "receipts"), receiptData);
-      
+
       for (let i = 0; i < cart.length; i++) {
         const item = cart[i];
         const { discounted } = getDiscountedPrice(item);
-        await handleMarkAsSold(item.id, user.uid, 'transferencia', discounted);
+        await handleMarkAsSold(item.id, buyerId, 'transferencia', discounted, guestInfo, true);
       }
 
       setCart([]);
       setIsPaymentModalOpen(false);
       setIsReceiptModalOpen(false);
+      setGuestInfo(null);
       alert("¡Comprobante subido con éxito! Los productos han sido marcados como vendidos. El administrador se comunicará contigo para coordinar la entrega.");
-      
+
       // Redirigir a WhatsApp
       const mensajeFinal = encodeURIComponent("¡Hola! Realicé una compra en Pijamas y ya subí el comprobante.");
       window.open(`https://wa.me/5491128711097?text=${mensajeFinal}`, "_blank");
@@ -1243,13 +1300,51 @@ export default function App() {
     }
   };
 
+  const saveBannerToFirestore = async () => {
+    try {
+      await setDoc(doc(db, "bannerConfig", "current"), saleConfig);
+      alert("Banner guardado exitosamente");
+    } catch (error) {
+      console.error("Error guardando banner:", error);
+      alert("Error al guardar el banner");
+    }
+  };
+
+  const loadMoreProducts = async () => {
+    if (!hasMoreProducts || isLoadingMore || !lastProductDoc) return;
+
+    setIsLoadingMore(true);
+    try {
+      const q = query(
+        collection(db, "products"),
+        where("status.publicada", "==", true),
+        where("appId", "==", APP_ID),
+        orderBy("createdAt", "desc"),
+        startAfter(lastProductDoc),
+        limit(16)
+      );
+
+      const snapshot = await getDocs(q);
+      const newProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      setProducts(prev => [...prev, ...newProducts]);
+      setLastProductDoc(snapshot.docs[snapshot.docs.length - 1]);
+      setHasMoreProducts(snapshot.docs.length === 16);
+    } catch (error) {
+      console.error("Error cargando más productos:", error);
+    }
+    setIsLoadingMore(false);
+  };
+
   const addToCart = (product) => {
-    if (!user) {
-      alert("Debes iniciar sesión para comprar");
+    // Si no hay usuario, mostrar modal de invitado
+    if (!user && !guestInfo) {
+      setPendingCartProduct(product);
+      setShowGuestModal(true);
       return;
     }
 
-    if (product.userId === user.uid) {
+    if (user && product.userId === user.uid) {
       alert("No puedes comprar tu propio producto");
       return;
     }
@@ -1275,10 +1370,10 @@ export default function App() {
       return { ...item, finalPrice: discounted };
     });
     const totalConDescuento = cartWithDiscount.reduce((sum, item) => sum + item.finalPrice, 0);
-    
+
     // Abrir MercadoPago con el link personalizado
     window.open(`https://link.mercadopago.com.ar/ihpijamas?amount=${totalConDescuento}`, "_blank");
-    
+
     let productosTexto = "";
     for (let i = 0; i < cart.length; i++) {
       const item = cart[i];
@@ -1289,23 +1384,29 @@ export default function App() {
       }
     }
 
+    const buyerInfo = guestInfo ? `\nComprador: ${guestInfo.name}\nWhatsApp: ${guestInfo.whatsapp}` : "";
+
     const mensaje = encodeURIComponent(
       "¡Hola! Realicé una compra en Pijamas:\n\n" +
       productosTexto +
       "\n\nTotal: $" + totalConDescuento +
+      buyerInfo +
       "\n\nTe adjunto el comprobante de pago."
     );
+
+    const buyerId = user?.uid || ('guest_' + Date.now());
 
     for (let i = 0; i < cart.length; i++) {
       const item = cart[i];
       const { discounted } = getDiscountedPrice(item);
-      handleMarkAsSold(item.id, user.uid, 'mercadopago', discounted);
+      handleMarkAsSold(item.id, buyerId, 'mercadopago', discounted, guestInfo, true);
     }
 
     window.open(`https://wa.me/5491128711097?text=${mensaje}`, "_blank");
 
     setCart([]);
     setIsCartOpen(false);
+    setGuestInfo(null);
   };
 
   const handleTransferPayment = () => {
@@ -1558,11 +1659,21 @@ export default function App() {
       {saleConfig.active && (
         <div
           onClick={handleSaleBannerClick}
-          className="bg-[#f67280] text-white py-2 px-4 text-center cursor-pointer select-none transition-all hover:bg-[#355c7d] active:scale-95"
+          style={{
+            backgroundColor: saleConfig.bgColor || "#f67280",
+            backgroundImage: saleConfig.imagePosition === "background" && saleConfig.imageUrl ? `url(${saleConfig.imageUrl})` : "none",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            color: saleConfig.textColor || "#ffffff"
+          }}
+          className="py-2 px-4 text-center cursor-pointer select-none transition-all active:scale-95"
         >
           <div className="container mx-auto flex flex-col md:flex-row items-center justify-center gap-2 md:gap-6">
+            {saleConfig.imagePosition === "side" && saleConfig.imageUrl && (
+              <img src={saleConfig.imageUrl} alt="Banner" className="h-12 w-12 object-contain" />
+            )}
             <span className="font-black italic tracking-tighter text-lg">{saleConfig.title}</span>
-            <span className="bg-white text-[#f67280] px-3 py-0.5 rounded-full font-bold text-xs uppercase tracking-widest animate-pulse">
+            <span style={{ backgroundColor: saleConfig.textColor || "#ffffff", color: saleConfig.bgColor || "#f67280" }} className="px-3 py-0.5 rounded-full font-bold text-xs uppercase tracking-widest animate-pulse">
               {saleConfig.promo}% OFF
             </span>
             <span className="text-[10px] uppercase font-bold tracking-widest opacity-80">
@@ -1948,6 +2059,19 @@ export default function App() {
             <Search size={64} className="mb-4 opacity-10" />
             <h3 className="text-xl font-serif italic">Sin resultados</h3>
             <p className="text-sm mt-2">Intentá con otros filtros de búsqueda.</p>
+          </div>
+        )}
+
+        {/* Botón Cargar más productos */}
+        {filteredProducts.length > 0 && hasMoreProducts && (
+          <div className="flex justify-center mt-12 mb-20">
+            <button
+              onClick={loadMoreProducts}
+              disabled={isLoadingMore}
+              className="bg-[#f67280] text-white px-8 py-4 rounded-2xl font-bold uppercase text-sm tracking-widest hover:bg-[#355c7d] transition-all disabled:opacity-50"
+            >
+              {isLoadingMore ? "Cargando..." : "Cargar más productos"}
+            </button>
           </div>
         )}
       </main>
@@ -2983,6 +3107,88 @@ export default function App() {
               </button>
             </div>
 
+            {/* Sección de Configuración del Banner */}
+            <div className="mb-12 p-6 bg-[#c06c84]/10 rounded-3xl">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[#355c7d]"><ImageIcon size={18} /> Configurar Banner</h3>
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">Título del banner</label>
+                  <input
+                    type="text"
+                    className="w-full bg-white border border-[#c06c84]/20 p-4 rounded-2xl outline-none focus:border-[#f67280] text-[#355c7d]"
+                    value={saleConfig.title}
+                    onChange={(e) => setSaleConfig({...saleConfig, title: e.target.value})}
+                    placeholder="Ej: ¡GRAN LIQUIDACIÓN!"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">Color de fondo</label>
+                    <input
+                      type="color"
+                      className="w-full h-12 bg-white border border-[#c06c84]/20 p-2 rounded-2xl cursor-pointer"
+                      value={saleConfig.bgColor || "#f67280"}
+                      onChange={(e) => setSaleConfig({...saleConfig, bgColor: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">Color de texto</label>
+                    <input
+                      type="color"
+                      className="w-full h-12 bg-white border border-[#c06c84]/20 p-2 rounded-2xl cursor-pointer"
+                      value={saleConfig.textColor || "#ffffff"}
+                      onChange={(e) => setSaleConfig({...saleConfig, textColor: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">URL de imagen (opcional)</label>
+                  <input
+                    type="text"
+                    className="w-full bg-white border border-[#c06c84]/20 p-4 rounded-2xl outline-none focus:border-[#f67280] text-[#355c7d]"
+                    value={saleConfig.imageUrl || ''}
+                    onChange={(e) => setSaleConfig({...saleConfig, imageUrl: e.target.value})}
+                    placeholder="https://ejemplo.com/imagen.jpg"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">Posición de imagen</label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="imagePosition"
+                        value="side"
+                        checked={saleConfig.imagePosition === "side"}
+                        onChange={(e) => setSaleConfig({...saleConfig, imagePosition: e.target.value})}
+                      />
+                      <span className="text-sm text-[#355c7d]">Al costado</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="imagePosition"
+                        value="background"
+                        checked={saleConfig.imagePosition === "background"}
+                        onChange={(e) => setSaleConfig({...saleConfig, imagePosition: e.target.value})}
+                      />
+                      <span className="text-sm text-[#355c7d]">Como fondo</span>
+                    </label>
+                  </div>
+                </div>
+
+                <button
+                  onClick={saveBannerToFirestore}
+                  className="w-full bg-[#f67280] text-white py-4 rounded-2xl font-bold uppercase text-sm tracking-widest hover:bg-[#355c7d] transition-all"
+                >
+                  Guardar Banner
+                </button>
+              </div>
+            </div>
+
             {/* Sección de Descuentos Global y por Categoría */}
             <div className="mb-12 p-6 bg-[#f8b195]/10 rounded-3xl">
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[#355c7d]"><Tag size={18} /> Configurar Descuentos</h3>
@@ -3808,6 +4014,61 @@ export default function App() {
       )}
 
       {/* --- Modal de Métodos de Pago --- */}
+      {/* --- Modal de Invitado --- */}
+      {showGuestModal && (
+        <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#355c7d]/60 backdrop-blur-sm" onClick={() => setShowGuestModal(false)}></div>
+          <div className="relative bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-[#355c7d]">Completá tus datos</h3>
+              <button onClick={() => setShowGuestModal(false)}><X size={24} /></button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">Nombre completo</label>
+                <input
+                  type="text"
+                  placeholder="Tu nombre"
+                  className="w-full bg-white border border-[#c06c84]/20 p-4 rounded-2xl outline-none focus:border-[#f67280] text-[#355c7d]"
+                  value={guestInfo?.name || ''}
+                  onChange={(e) => setGuestInfo({...(guestInfo || {}), name: e.target.value})}
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase text-[#6c5b7b]">WhatsApp</label>
+                <input
+                  type="tel"
+                  placeholder="+54 9 11 2871 1097"
+                  className="w-full bg-white border border-[#c06c84]/20 p-4 rounded-2xl outline-none focus:border-[#f67280] text-[#355c7d]"
+                  value={guestInfo?.whatsapp || ''}
+                  onChange={(e) => setGuestInfo({...(guestInfo || {}), whatsapp: e.target.value})}
+                />
+              </div>
+
+              <button
+                onClick={() => {
+                  if (!guestInfo?.name || !guestInfo?.whatsapp) {
+                    alert("Por favor completá todos los campos");
+                    return;
+                  }
+                  setShowGuestModal(false);
+                  if (pendingCartProduct) {
+                    setCart([...cart, pendingCartProduct]);
+                    setIsCartOpen(true);
+                    setPendingCartProduct(null);
+                  }
+                }}
+                className="w-full bg-[#f67280] text-white py-4 rounded-2xl font-bold uppercase text-sm tracking-widest hover:bg-[#355c7d] transition-all"
+              >
+                Continuar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isPaymentModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-[#355c7d]/60 backdrop-blur-sm" onClick={() => setIsPaymentModalOpen(false)}></div>
