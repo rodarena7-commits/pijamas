@@ -3,7 +3,7 @@ import { Search, ShoppingBag, User, Heart, PlusCircle, X, Camera, ChevronRight, 
 import { initializeApp } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from 'firebase/auth';
-import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, orderBy, onSnapshot, Timestamp, setDoc, increment, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, orderBy, onSnapshot, Timestamp, setDoc, increment, arrayUnion, arrayRemove, limit, startAfter } from 'firebase/firestore';
 import Cropper from 'react-easy-crop';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
