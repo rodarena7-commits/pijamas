@@ -1300,14 +1300,19 @@ export default function App() {
     }
   };
 
-  const saveBannerToFirestore = async () => {
+  const saveBannerToFirestore = async (configToSave = saleConfig) => {
     try {
-      await setDoc(doc(db, "bannerConfig", "current"), saleConfig);
-      alert("Banner guardado exitosamente");
+      await setDoc(doc(db, "bannerConfig", "current"), configToSave, { merge: true });
     } catch (error) {
       console.error("Error guardando banner:", error);
-      alert("Error al guardar el banner");
     }
+  };
+
+  // Actualizar saleConfig Y guardar automáticamente en Firebase
+  const updateSaleConfig = (updates) => {
+    const newConfig = { ...saleConfig, ...updates };
+    setSaleConfig(newConfig);
+    saveBannerToFirestore(newConfig);
   };
 
   const loadMoreProducts = async () => {
@@ -1658,28 +1663,56 @@ export default function App() {
       {saleConfig.active && (
         <div
           onClick={handleSaleBannerClick}
-          style={{
-            backgroundColor: saleConfig.bgColor || "#f67280",
-            backgroundImage: saleConfig.imagePosition === "background" && saleConfig.imageUrl ? `url(${saleConfig.imageUrl})` : "none",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            color: saleConfig.textColor || "#ffffff"
-          }}
-          className="py-2 px-4 text-center cursor-pointer select-none transition-all active:scale-95"
+          className="text-center cursor-pointer select-none transition-all active:scale-95"
         >
-          <div className="container mx-auto flex flex-col md:flex-row items-center justify-center gap-2 md:gap-6">
-            {saleConfig.imagePosition === "side" && saleConfig.imageUrl && (
-              <img src={saleConfig.imageUrl} alt="Banner" className="h-12 w-12 object-contain" />
-            )}
-            <span className="font-black italic tracking-tighter text-lg">{saleConfig.title}</span>
-            <span style={{ backgroundColor: saleConfig.textColor || "#ffffff", color: saleConfig.bgColor || "#f67280" }} className="px-3 py-0.5 rounded-full font-bold text-xs uppercase tracking-widest animate-pulse">
-              {saleConfig.promo}% OFF
-            </span>
-            <span className="text-[10px] uppercase font-bold tracking-widest opacity-80">
-              {saleConfig.fechaFin && `Válido hasta ${new Date(saleConfig.fechaFin).toLocaleDateString()}`}
-              {saleConfig.textoAdicional && ` · ${saleConfig.textoAdicional}`}
-            </span>
-          </div>
+          {/* Imagen como fondo */}
+          {saleConfig.imagePosition === "background" && saleConfig.imageUrl ? (
+            <div
+              style={{
+                backgroundImage: `url(${saleConfig.imageUrl})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundColor: saleConfig.bgColor || "#f67280",
+              }}
+              className="py-6 md:py-8 px-4 relative"
+            >
+              {/* Overlay para asegurar legibilidad del texto */}
+              <div className="absolute inset-0 bg-black/30"></div>
+              <div className="relative container mx-auto flex flex-col items-center justify-center gap-3 md:gap-4">
+                <span className="font-black italic tracking-tighter text-lg md:text-2xl text-white drop-shadow-lg">{saleConfig.title}</span>
+                <span style={{ backgroundColor: saleConfig.textColor || "#ffffff", color: saleConfig.bgColor || "#f67280" }} className="px-4 py-1 rounded-full font-bold text-xs md:text-sm uppercase tracking-widest animate-pulse">
+                  {saleConfig.promo}% OFF
+                </span>
+                <span className="text-[10px] md:text-xs uppercase font-bold tracking-widest text-white drop-shadow-lg">
+                  {saleConfig.fechaFin && `Válido hasta ${new Date(saleConfig.fechaFin).toLocaleDateString()}`}
+                  {saleConfig.textoAdicional && ` · ${saleConfig.textoAdicional}`}
+                </span>
+              </div>
+            </div>
+          ) : (
+            /* Imagen al lado o sin imagen */
+            <div
+              style={{
+                backgroundColor: saleConfig.bgColor || "#f67280",
+                color: saleConfig.textColor || "#ffffff"
+              }}
+              className="py-4 md:py-6 px-4"
+            >
+              <div className="container mx-auto flex flex-col md:flex-row items-center justify-center gap-3 md:gap-6 md:flex-wrap">
+                {saleConfig.imagePosition === "side" && saleConfig.imageUrl && (
+                  <img src={saleConfig.imageUrl} alt="Banner" className="h-16 md:h-20 w-auto object-contain flex-shrink-0" />
+                )}
+                <span className="font-black italic tracking-tighter text-base md:text-xl">{saleConfig.title}</span>
+                <span style={{ backgroundColor: saleConfig.textColor || "#ffffff", color: saleConfig.bgColor || "#f67280" }} className="px-3 py-0.5 md:px-4 md:py-1 rounded-full font-bold text-xs md:text-sm uppercase tracking-widest animate-pulse whitespace-nowrap">
+                  {saleConfig.promo}% OFF
+                </span>
+                <span className="text-[10px] md:text-xs uppercase font-bold tracking-widest opacity-90">
+                  {saleConfig.fechaFin && `Válido hasta ${new Date(saleConfig.fechaFin).toLocaleDateString()}`}
+                  {saleConfig.textoAdicional && ` · ${saleConfig.textoAdicional}`}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -3116,8 +3149,9 @@ export default function App() {
                     type="text"
                     className="w-full bg-white border border-[#c06c84]/20 p-4 rounded-2xl outline-none focus:border-[#f67280] text-[#355c7d]"
                     value={saleConfig.title}
-                    onChange={(e) => setSaleConfig({...saleConfig, title: e.target.value})}
+                    onChange={(e) => updateSaleConfig({ title: e.target.value })}
                     placeholder="Ej: ¡GRAN LIQUIDACIÓN!"
+                    autoComplete="off"
                   />
                 </div>
 
@@ -3128,7 +3162,7 @@ export default function App() {
                       type="color"
                       className="w-full h-12 bg-white border border-[#c06c84]/20 p-2 rounded-2xl cursor-pointer"
                       value={saleConfig.bgColor || "#f67280"}
-                      onChange={(e) => setSaleConfig({...saleConfig, bgColor: e.target.value})}
+                      onChange={(e) => updateSaleConfig({ bgColor: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -3137,7 +3171,7 @@ export default function App() {
                       type="color"
                       className="w-full h-12 bg-white border border-[#c06c84]/20 p-2 rounded-2xl cursor-pointer"
                       value={saleConfig.textColor || "#ffffff"}
-                      onChange={(e) => setSaleConfig({...saleConfig, textColor: e.target.value})}
+                      onChange={(e) => updateSaleConfig({ textColor: e.target.value })}
                     />
                   </div>
                 </div>
@@ -3148,8 +3182,9 @@ export default function App() {
                     type="text"
                     className="w-full bg-white border border-[#c06c84]/20 p-4 rounded-2xl outline-none focus:border-[#f67280] text-[#355c7d]"
                     value={saleConfig.imageUrl || ''}
-                    onChange={(e) => setSaleConfig({...saleConfig, imageUrl: e.target.value})}
+                    onChange={(e) => updateSaleConfig({ imageUrl: e.target.value })}
                     placeholder="https://ejemplo.com/imagen.jpg"
+                    autoComplete="off"
                   />
                 </div>
 
@@ -3162,7 +3197,7 @@ export default function App() {
                         name="imagePosition"
                         value="side"
                         checked={saleConfig.imagePosition === "side"}
-                        onChange={(e) => setSaleConfig({...saleConfig, imagePosition: e.target.value})}
+                        onChange={(e) => updateSaleConfig({ imagePosition: e.target.value })}
                       />
                       <span className="text-sm text-[#355c7d]">Al costado</span>
                     </label>
@@ -3172,19 +3207,16 @@ export default function App() {
                         name="imagePosition"
                         value="background"
                         checked={saleConfig.imagePosition === "background"}
-                        onChange={(e) => setSaleConfig({...saleConfig, imagePosition: e.target.value})}
+                        onChange={(e) => updateSaleConfig({ imagePosition: e.target.value })}
                       />
                       <span className="text-sm text-[#355c7d]">Como fondo</span>
                     </label>
                   </div>
                 </div>
 
-                <button
-                  onClick={saveBannerToFirestore}
-                  className="w-full bg-[#f67280] text-white py-4 rounded-2xl font-bold uppercase text-sm tracking-widest hover:bg-[#355c7d] transition-all"
-                >
-                  Guardar Banner
-                </button>
+                <p className="text-center text-sm text-[#6c5b7b] font-semibold">
+                  ✓ Los cambios se guardan automáticamente
+                </p>
               </div>
             </div>
 
@@ -3199,11 +3231,12 @@ export default function App() {
                       type="number"
                       className="flex-1 bg-white border border-[#c06c84]/20 p-4 rounded-2xl outline-none focus:border-[#f67280] text-[#355c7d]"
                       value={saleConfig.promo}
-                      onChange={(e) => setSaleConfig({...saleConfig, promo: e.target.value})}
+                      onChange={(e) => updateSaleConfig({ promo: e.target.value })}
                       placeholder="Ej: 50"
+                      autoComplete="off"
                     />
                     <button
-                      onClick={() => setSaleConfig({...saleConfig, active: !saleConfig.active})}
+                      onClick={() => updateSaleConfig({ active: !saleConfig.active })}
                       className={`px-4 rounded-2xl font-bold text-sm ${saleConfig.active ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-700'}`}
                     >
                       {saleConfig.active ? 'Activo' : 'Inactivo'}
@@ -3218,7 +3251,8 @@ export default function App() {
                     type="date"
                     className="w-full bg-white border border-[#c06c84]/20 p-4 rounded-2xl outline-none focus:border-[#f67280] text-[#355c7d]"
                     value={saleConfig.fechaFin || ''}
-                    onChange={(e) => setSaleConfig({...saleConfig, fechaFin: e.target.value})}
+                    onChange={(e) => updateSaleConfig({ fechaFin: e.target.value })}
+                    autoComplete="off"
                   />
                 </div>
 
@@ -3228,8 +3262,9 @@ export default function App() {
                     rows="2"
                     className="w-full bg-white border border-[#c06c84]/20 p-4 rounded-2xl outline-none focus:border-[#f67280] text-[#355c7d]"
                     value={saleConfig.textoAdicional || ''}
-                    onChange={(e) => setSaleConfig({...saleConfig, textoAdicional: e.target.value})}
+                    onChange={(e) => updateSaleConfig({ textoAdicional: e.target.value })}
                     placeholder="Ej: Oferta válida hasta agotar stock"
+                    autoComplete="off"
                   />
                 </div>
 
